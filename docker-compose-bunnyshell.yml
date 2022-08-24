@@ -20,7 +20,7 @@ services:
             - backend
 
     # Run the web server container for static content, and proxying to our FPM container
-    web-server:
+    webserver:
         build:
             context: .
             target: web_server
