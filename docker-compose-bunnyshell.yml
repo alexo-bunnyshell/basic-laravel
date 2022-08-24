@@ -1,7 +1,7 @@
 version: '3.4'
 services:
     # We need to run the FPM container for our application
-    laravel-fpm:
+    fpm:
         build:
             context: .
             target: fpm_server
@@ -20,7 +20,7 @@ services:
             - backend
 
     # Run the web server container for static content, and proxying to our FPM container
-    laravel-web:
+    web-server:
         build:
             context: .
             target: web_server
@@ -30,7 +30,7 @@ services:
             - '80:80'
         environment:
             # We need to pass in the new FPM hst as the name of the fpm container on port 9000
-            FPM_HOST: "laravel-fpm:9000"
+            FPM_HOST: "fpm:9000"
         # Mount the public directory into the container so we can serve any static files directly when they change
         volumes:
             # Here we mount in our codebase so any changes are immediately reflected into the container
@@ -40,7 +40,7 @@ services:
 
 
     # Run the Laravel Scheduler
-    laravel-cron:
+    cron:
         build:
             context: .
             target: cron
@@ -54,23 +54,32 @@ services:
 
 
     # Run the frontend, and file watcher in a container, so any changes are immediately compiled and servable
-    laravel-frontend:
+#     frontend:
+#         build:
+#             context: .
+#             target: frontend
+#         # Override the default CMD, so we can watch changes to frontend files, and re-transpile them.
+#         command: ["npm", "run", "build"]
+# #        image: laravel-bunnyshell/frontend
+#         volumes:
+#             # Here we mount in our codebase so any changes are immediately reflected into the container
+#             - '.:/opt/apps/laravel-bunnyshell'
+#             # Add node_modeules as singular volume.
+#             # This prevents our local node_modules from being propagated into the container,
+#             # So the node_modules can be compiled for each of the different architectures (Local, Image)
+#             - '/opt/app/node_modules/'
+#         networks:
+#             - backend
+
+    cli:
         build:
             context: .
-            target: frontend
-        # Override the default CMD, so we can watch changes to frontend files, and re-transpile them.
-        command: ["npm", "run", "build"]
-#        image: laravel-bunnyshell/frontend
+            target: cron
         volumes:
             # Here we mount in our codebase so any changes are immediately reflected into the container
-            - '.:/opt/apps/laravel-bunnyshell'
-            # Add node_modeules as singular volume.
-            # This prevents our local node_modules from being propagated into the container,
-            # So the node_modules can be compiled for each of the different architectures (Local, Image)
-            - '/opt/app/node_modules/'
+            - './public:/opt/apps/laravel-bunnyshell/public'
         networks:
             - backend
-
     mysql:
         image: 'mariadb'
         ports:
